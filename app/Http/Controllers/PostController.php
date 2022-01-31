@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Post;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class PostController extends Controller
 {
@@ -21,6 +22,27 @@ class PostController extends Controller
         ]);
     }
 
+    public function create()
+    {
+        return view('posts.create');
+    }
+
+    public function store(Request $request)
+    {
+        $this->authorize('create', Post::class);
+
+        $attributes = validator($request->all(), [
+            'title' => ['required'],
+            'body' => ['required']
+        ])->validate();
+
+        $attributes['user_id'] = $request->user()->id;
+
+        Post::create($attributes);
+
+        return redirect()->route('post.index');
+    }
+
     public function edit(Post $post)
     {
         return view('posts.edit', [
@@ -30,14 +52,16 @@ class PostController extends Controller
 
     public function update(Request $request, Post $post)
     {
-        $attribues = validator($request->all(), [
+        $this->authorize('update', $post);
+
+        $attributes = validator($request->all(), [
             'title' => ['required'],
             'body' => ['required']
         ])->validate();
 
-        $attribues['user_id'] = 1;
+        $attributes['user_id'] = 1;
 
-        $post->update($attribues);
+        $post->update($attributes);
 
         return redirect()->route('post.show', $post->uuid);
     }
